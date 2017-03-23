@@ -21,36 +21,36 @@ This is a tool to send and receive MCIP messages. This in combination with the "
 Use this tool to send or receive SMS in the container.
 
 To be able to send SMS the container must be configured to allow unauthenticated READ/WRITE access to the CLI. Example for sending an SMS:
-> sms-tool -i lte2 -n +49123456789 -t "This is the text"
+<pre>sms-tool -i lte2 -n +49123456789 -t "This is the text"</pre>
 
 To receive SMS the container must be configured to forward SMS to containers. Example for receiving an SMS:
-> sms-tool -l 
+<pre>sms-tool -l</pre>
 
 ## "get-input"
 Use this tool to get notified when a digital input changes its state.
 
 To be able to get the state change the container must be configured to forward input events to containers. Example for listening for these events:
-> get-input -p
+<pre>get-input -p</pre>
 
 ## "set-output"
 Use this tool to set the state of a digital output.
 
 To be able to change the state of an output the container must be configured to allow unauthenticated READ/WRITE access to the CLI. Example for setting the digital Output 2.1 to closed:
-> set-output -o 2.1 -s close
+<pre>set-output -o 2.1 -s close</pre>
 
 ## "get-pulses"
 Use this tool to get notified when pulses have been detected on a digital input. 
 
 To be able to get the pulses the container must be configured to forward input events to containers. Example for listening for these events:
-> get-pulses -p
+<pre>get-pulses -p</pre>
 
 ## "cli-cmd"
 Use this tool to send a command to the routers CLI in order to get or set configuration or get a status value.
 
 To be able to send commands to the CLI the container must be configured to allow unauthenticated access to the CLI. Depending on the granted access rights, the status or the configuration can be read or set. Example for checking the link state of the Ethernet port 1.1:
-> cli-cmd status.ethernet1.port[1].link
+<pre>cli-cmd status.ethernet1.port[1].link</pre>
 
 Example to change the location setting and activate the new profile:
-> cli-cmd administration.hostnames.location=SomePlace
-> cli-cmd administration.profiles.activate
+<pre>cli-cmd administration.hostnames.location=SomePlace
+cli-cmd administration.profiles.activate</pre>
 
