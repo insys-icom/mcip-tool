@@ -65,6 +65,7 @@ static bool read_from_mcip(int sock, bool listen)
     return true;
 }
 
+/* init CLI session */
 static bool init_cli(struct s_m3_cli **cli)
 {
     char *M3_CLI_UDS_SOCKET = "/devices/cli_no_auth/cli.socket";
@@ -184,8 +185,8 @@ static void usage_applets(void)
            "The names of the other applets are:\n"                         \
            "  sms-tool\n"                                                  \
            "  get-input\n"                                                 \
-           "  set-input\n"                                                 \
            "  get-pulses\n"                                                \
+           "  set-output\n"                                                \
            "  cli-cmd\n"                                                   \
            "\n");
 
