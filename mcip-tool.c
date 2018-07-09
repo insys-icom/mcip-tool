@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <arpa/inet.h>
+#include <sys/utsname.h>
 
 #include "libmcip.h"
 #include "m3_cli.h"
@@ -183,11 +184,12 @@ static void usage_applets(void)
 {
     printf("This tool is an applet of the multi binary \"mcip-tool\".\n"   \
            "The names of the other applets are:\n"                         \
-           "  sms-tool\n"                                                  \
-           "  get-input\n"                                                 \
-           "  get-pulses\n"                                                \
-           "  set-output\n"                                                \
-           "  cli-cmd\n"                                                   \
+           "  sms-tool     send or receive SMS\n"                          \
+           "  get-input    get state of inputs\n"                          \
+           "  get-pulses   receive pulses of an input\n"                   \
+           "  set-output   set the state of an output \n"                  \
+           "  cli-cmd      send a command via CLI\n"                       \
+           "  container    start/stop/restart a container\n"               \
            "\n");
 
     return;
@@ -278,6 +280,24 @@ static void usage_cli(char *tool, char *description)
             "%s\n"                                                                                \
             "\n"                                                                                  \
             "  -h, --help            Display this help and exit.\n"                               \
+            "\n", tool, description);
+
+    usage_applets();
+
+    exit(0);
+}
+
+/* print help for container, then exit */
+static void usage_container(char *tool, char *description)
+{
+    printf("\nUsage: %s [OPTIONS]\n"                                                                \
+            "%s\n"                                                                                  \
+            "\n"                                                                                    \
+            "  -h, --help            Display this help and exit.\n"                                 \
+            "  -n, --name            Name of container to stop/restart; Default is the hostname.\n" \
+            "  -0, --stop            Stop a container.\n"                                         \
+            "  -1, --start           Start a container.\n"                                         \
+            "  -r, --restart         Restart the container.\n"                                      \
             "\n", tool, description);
 
     usage_applets();
@@ -512,12 +532,54 @@ static bool get_options_cli(int argc, char **argv, char *strOpts_tool, struct op
             default:
             case 'h': {
                 usage_cli(argv[0], description);
+                break;
             }
         }
     }
 
     if (optind < argc) {
         *cmd = argv[optind];
+    }
+
+    return true;
+}
+
+/* read the given parameters for container */
+static bool get_options_container(int argc, char **argv, char *strOpts_tool, struct option *Opts_tool, char **name, int *action, char *description)
+{
+    int iOpts = 0;
+    int c;
+    char *pArg = 0;
+
+    while ((c = getopt_long(argc, argv, strOpts_tool, Opts_tool, &iOpts)) != -1) {
+        pArg = optarg;
+        if (pArg && (pArg[0] == '=')) {
+            pArg++;
+        }
+
+        switch (c) {
+            case 'r': {
+                *action = 2; /* restart */
+                break;
+            }
+            case '0': {
+                *action = 0; /* stop */
+                break;
+            }
+            case '1': {
+                *action = 1; /* start */
+                break;
+            }
+            case 'n': {
+                *name = pArg;
+                break;
+            }
+            default:
+            case 'h': {
+                usage_container(argv[0], description);
+                break;
+            }
+        }
     }
 
     return true;
@@ -948,6 +1010,92 @@ static int main_cli_cmd(int argc, char **argv)
     return 0;
 }
 
+/* container stop/restart */
+static int main_container(int argc, char **argv)
+{
+    struct s_m3_cli *cli = NULL;
+    char *cli_answer = NULL;
+    char *name = NULL;
+    char *cmd = NULL;
+    int action = 2; /* default: restart */
+    bool ret = false;
+    struct utsname buf;
+    static char strOpts[] = "hn:r01";
+    static struct option Opts[] = {
+        { "help",           no_argument,        0, 'h' },
+        { "name",           required_argument,  0, 'n' },
+        { "restart",        no_argument,        0, 'r' },
+        { "stop",           no_argument,        0, '0' },
+        { "start",          no_argument,        0, '1' },
+        { 0,                0,                  0,  0  }
+    };
+    char cmd_stop[] = "help.debug.container_state.state_change=stop";
+    char cmd_start[] = "help.debug.container_state.state_change=start";
+    char cmd_restart[] = "help.debug.container_state.state_change=restart";
+    char cmd_submit[] = "help.debug.container_state.submit";
+
+    /* get parameters */
+    if (get_options_container(argc, argv, strOpts, Opts, &name, &action,
+                        "Send the command to restart or to stop a container") == false) {
+        return -1;
+    }
+
+    if (init_cli(&cli) == false) {
+        return -1;
+    }
+
+    /* the container name has not been given, use the host name of this container */
+    if (name == NULL) {
+        if (uname(&buf) != 0) {
+            printf("Could not get the host name of this container\n");
+            return -1;
+        }
+        cmd = calloc(1, strlen(buf.nodename) + strlen("help.debug.container_state.name=") + 1);
+        sprintf(cmd, "help.debug.container_state.name=%s", buf.nodename);
+    }
+    /* send the name of the container to be stopped/restarted */
+    else {
+        cmd = calloc(1, strlen(name) + strlen("help.debug.container_state.name=") + 1);
+        sprintf(cmd, "help.debug.container_state.name=%s", name);
+    }
+
+    if (m3_cli_query(cli, cmd, &cli_answer, 6000) == false) {
+        printf("Failed to send the command (%d): %s\n", errno, strerror(errno));
+        safefree((void **) &cmd);
+        return -1;
+    }
+    safefree((void **) &cmd);
+    safefree((void **) & cli_answer);
+
+    /* send the command restart */
+    if (action == 2) {
+        ret = m3_cli_query(cli, cmd_restart, &cli_answer, 6000);
+    }
+    /* send the command restart */
+    else if (action == 1) {
+        ret = m3_cli_query(cli, cmd_start, &cli_answer, 6000);
+    }
+    else {
+        ret = m3_cli_query(cli, cmd_stop, &cli_answer, 6000);
+    }
+    if (ret == false) {
+        printf("Failed to send the command (%d): %s\n", errno, strerror(errno));
+        return -1;
+    }
+    safefree((void **) & cli_answer);
+
+    /* send the command to execute the restart */
+    if (m3_cli_query(cli, cmd_submit, &cli_answer, 6000) == false) {
+        printf("Failed to send the command (%d): %s\n", errno, strerror(errno));
+        return -1;
+    }
+
+    m3_cli_shutdown(&cli);
+
+    return 0;
+}
+
+
 /* tool to send and receive simple MCIP messages */
 int main(int argc, char **argv)
 {
@@ -977,6 +1125,9 @@ int main(int argc, char **argv)
     }
     else if (strcmp(cmdname, "cli-cmd") == 0) {
         return main_cli_cmd(argc, argv);
+    }
+    else if (strcmp(cmdname, "container") == 0) {
+        return main_container(argc, argv);
     }
 
     return 0;
