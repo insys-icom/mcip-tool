@@ -121,7 +121,7 @@ static bool send_sms(char *number, char *text, char *modem)
     }
 
     /* send the submit command */
-    if (m3_cli_query(cli, "help.debug.sms.submit=1", &cli_answer, 6000) == false) {
+    if (m3_cli_query(cli, "help.debug.sms.submit=1", &cli_answer, 60000) == false) {
         printf("Failed to set the SMS (%d): %s\n", errno, strerror(errno));
         return false;
     }

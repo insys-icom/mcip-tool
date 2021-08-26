@@ -18,7 +18,7 @@ void safefree(void **pp)
 /* generic read from the cli socket
     fd          is needed
     answer      if given, the answer is written into the buffer (careful, allocated)
-    prompt      if given, the reading of the answer stops on receipt of the prompt (and the prompt is trimmed from the ansawer)
+    prompt      if given, the reading of the answer stops on receipt of the prompt (and the prompt is trimmed from the answer)
     waittime_ms maximum amount of time (in milliseconds) to wait for an answer (use 0 to simply read and discard present data on the socket) */
 bool m3_cli_read_socket(int fd, char **answer, char *prompt, int waittime_ms)
 {
@@ -37,8 +37,8 @@ bool m3_cli_read_socket(int fd, char **answer, char *prompt, int waittime_ms)
             tv.tv_usec = waittime_ms * 1000;
         }
         else {
-          tv.tv_sec = 0;
-          tv.tv_usec = 0;
+            tv.tv_sec = 0;
+            tv.tv_usec = 0;
         }
         ret = select(fd + 1, &read_fds, NULL, NULL, &tv);
         /* on timeout always return */
@@ -78,7 +78,7 @@ bool m3_cli_read_socket(int fd, char **answer, char *prompt, int waittime_ms)
         }
     }
 
-    /* if the answer is queried, sotre it in the given buffer */
+    /* if the answer is queried, store it in the given buffer */
     if (answer != NULL) {
         *answer = calloc(1, current_size + 1);
         memcpy(*answer, cli_reply, current_size);
