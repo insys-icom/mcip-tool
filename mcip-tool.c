@@ -72,7 +72,7 @@ static bool init_cli(struct s_m3_cli **cli)
     char *M3_CLI_UDS_SOCKET = "/devices/cli_no_auth/cli.socket";
 
     /* initialise the CLI, opens the socket and retrieves the prompt */
-    *cli = m3_cli_initialise(M3_CLI_UDS_SOCKET, 100);
+    *cli = m3_cli_initialise(M3_CLI_UDS_SOCKET, 300);
     if (*cli == NULL) {
         printf("Failed to initialise CLI (%d): %s\n", errno, strerror(errno));
         printf("Maybe the container has not been added to the \"Read/Write\" user group for access the CLI without authentication?");
@@ -800,7 +800,6 @@ static int get_input(int argc, char **argv, bool pulses, char *description)
                 else if (pulses == true && p[11] == 'p') {
                     print = true;
                 }
-
 
                 /* print the received telegram */
                 if (print == true) {
