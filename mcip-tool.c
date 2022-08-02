@@ -143,7 +143,7 @@ static bool switch_output(char *output, char *state)
     char buffer[1000] = { 0 };
 
     /* initialise the CLI, opens the socket and retrieves the prompt */
-    cli = m3_cli_initialise(M3_CLI_UDS_SOCKET, 100);
+    cli = m3_cli_initialise(M3_CLI_UDS_SOCKET, 300);
     if (cli == NULL) {
         printf("Failed to initialise CLI (%d): %s\n", errno, strerror(errno));
         printf("Maybe the container has not been added to the \"Read/Write\" user group for access the CLI without authentication?");
